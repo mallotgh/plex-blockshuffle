@@ -1,0 +1,23 @@
+# VPS-Betrieb hinter einem gemeinsamen Reverse Proxy (Caddy im Netz "edge").
+# Kein ports:-Eintrag! Veröffentlichte Ports umgehen ufw (Docker/iptables) —
+# erreichbar ist der Container ausschließlich über den Proxy im edge-Netz.
+#
+#   docker network create edge          # einmalig, falls noch nicht vorhanden
+#   docker compose -f docker-compose.vps.yml up -d --build
+services:
+  blockshuffle:
+    build: .
+    image: plex-blockshuffle:latest
+    container_name: plex-blockshuffle
+    environment:
+      APP_BASE_URL: ${APP_BASE_URL}
+      PLEX_PRODUCT: ${PLEX_PRODUCT:-Plex Blockshuffle}
+    volumes:
+      - ./config:/config
+    networks:
+      - edge
+    restart: unless-stopped
+
+networks:
+  edge:
+    external: true
