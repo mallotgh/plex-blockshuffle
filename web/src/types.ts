@@ -56,7 +56,6 @@ export interface ShuffleRun {
   playlistId: string;
   seed: string;
   createdAt: number;
-  shadowPlaylistId: string | null;
   openUrl: string | null;
   blockCount: number;
   trackCount: number;

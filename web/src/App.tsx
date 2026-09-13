@@ -45,8 +45,9 @@ function MainApp({ displayName }: { displayName: string }) {
   const [busy, setBusy] = useState(false);
 
   /**
-   * Würfelt neu und schreibt die Shadow-Playlist. Die Wiedergabe startet die
-   * App nicht selbst — Übergabe an die Spotify-App über die Erfolgskarte.
+   * Würfelt neu und sortiert die Playlist direkt auf dem Plex-Server um.
+   * Die Wiedergabe startet die App nicht selbst — Übergabe an Plex über die
+   * Erfolgskarte.
    */
   const runShuffle = useCallback(
     async (opts: { preview: boolean; seed?: string }) => {
