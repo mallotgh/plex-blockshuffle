@@ -2,16 +2,15 @@
 
 Selbst gehostete Weboberfläche, die Audio-Playlists vom eigenen **Plex Media Server** lädt und darin **Blöcke** definiert: geordnete Gruppen von Tracks (z. B. Original → Sample A → Sample B), die beim Shuffle als Einheit behandelt werden. Die Reihenfolge der Blöcke ist zufällig, die Reihenfolge **innerhalb** eines Blocks bleibt fest.
 
-Die App berechnet die Reihenfolge selbst (seedbarer Fisher-Yates über „Einheiten") und sortiert die **Playlist direkt auf dem Plex-Server um** — anders als bei Spotify braucht es keine Shadow-Playlist, weil die Plex-API einzelne Einträge verschieben kann. Abgespielt wird ganz normal in Plex/Plexamp, bei ausgeschaltetem Shuffle. Player-Fernsteuerung gibt es bewusst nicht (Lehre aus dem Schwesterprojekt [spotify-blockshuffle](https://github.com/mallotgh/spotify-blockshuffle)).
+Die App berechnet die Reihenfolge selbst (seedbarer Fisher-Yates über „Einheiten") und schreibt sie in eine **Shadow-Playlist** auf dem Plex-Server, die man ganz normal in Plex/Plexamp abspielt — bei ausgeschaltetem Shuffle. Player-Fernsteuerung gibt es bewusst nicht (Lehre aus dem Schwesterprojekt [spotify-blockshuffle](https://github.com/mallotgh/spotify-blockshuffle)).
 
 ## Funktionsweise
 
 - **Anmeldung** über den offiziellen Plex-PIN-Flow (app.plex.tv). Jeder Nutzer meldet sich mit seinem eigenen Plex-Account an; die App findet den Musik-Server über plex.tv und spricht ihn über seine **Remote-Access-URL** (`…plex.direct`) an — die App muss dafür nicht im selben Netz laufen wie der Plex-Server.
 - **Mehrbenutzer:** Playlists, Blöcke und Läufe sind strikt pro Nutzer getrennt. Zugang hat, wem der Plex-Server freigegeben ist — kein Nutzerlimit, kein Premium-Zwang, keine App-Registrierung.
 - **Blöcke:** Ein Track darf zu mehreren Blöcken gehören (spielt dann einmal pro Block); Blöcke unter 2 Tracks werden automatisch aufgelöst. Verschwindet ein Track aus der Playlist, bleibt sein Blockeintrag als *verwaist* markiert erhalten und wird beim Shuffle übersprungen.
-- **„Neu würfeln"** berechnet die Reihenfolge (Seed reproduzierbar) und sortiert die Playlist selbst um — nicht-destruktiv Eintrag für Eintrag (bei großen Playlists dauert das entsprechend einige Sekunden). **„In Plex öffnen"** führt direkt hin — dort abspielen, **Shuffle aus**. Die bisherige Reihenfolge der Playlist wird dabei ersetzt; über den Seed lässt sich jede frühere Reihenfolge reproduzieren.
-- **Smart-Playlists** lassen sich nicht umsortieren (ihre Reihenfolge kommt aus einem Plex-Filter) — dafür in Plex eine normale Playlist anlegen.
-- Steckt ein Track in **mehreren Blöcken**, spielt er ohne Shadow-Playlist nur einmal: im zuerst gezogenen Block.
+- **„Neu würfeln"** berechnet die Reihenfolge (Seed reproduzierbar) und schreibt sie in die Playlist `🔀 <Name> (Blockshuffle)` (Beschreibung: Blockzahl, Seed, Zeitstempel). **„In Plex öffnen"** führt direkt hin — dort abspielen, **Shuffle aus**.
+- Smart-Playlists können als Quelle dienen (die Shadow-Playlist ist immer eine normale Playlist).
 
 ## Einrichtung
 
@@ -68,8 +67,6 @@ Die App liest `X-Forwarded-*` (trustProxy), setzt Session-Cookies mit Secure-Fla
 | Login endet mit „Kein erreichbarer Plex-Server" | Fernzugriff auf dem Server aus, oder dem Account fehlt die Server-Freigabe. |
 | „Der Plex-Server ist … nicht erreichbar" | Remote-Access-URL hat sich geändert (neue IP); die App löst automatisch neu auf — schlägt auch das fehl: Fernzugriff in Plex prüfen. |
 | Reihenfolge stimmt beim Abspielen nicht | Shuffle in Plex/Plexamp ist aktiv — ausschalten. |
-| „Smart-Playlist … umsortieren ist nicht möglich" | Gewollt: Smart-Playlists sind filterbasiert. Inhalt in eine normale Playlist übernehmen. |
-| Übrig gebliebene `🔀 … (Blockshuffle)`-Playlists | Relikte der frühen Version; werden beim nächsten Würfeln der jeweiligen Playlist automatisch gelöscht, können aber auch von Hand weg. |
 | Nach Neustart erneut Login nötig | `/config`-Volume nicht persistent gemountet. |
 
 ## Bewusst nicht enthalten

@@ -111,7 +111,7 @@ export default function PreviewModal({ run, busy, onClose, onReshuffle }: Props)
               target="_blank"
               rel="noreferrer"
               className="ml-auto rounded-md bg-amber-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-amber-500"
-              title="Öffnet die Playlist in Plex — nach dem Würfeln steht sie in genau dieser Reihenfolge"
+              title="Öffnet die Shadow-Playlist mit genau dieser Reihenfolge in Plex"
             >
               In Plex öffnen
             </a>

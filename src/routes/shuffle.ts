@@ -7,7 +7,7 @@ import { blockShuffle, type ShuffleUnit } from '../shuffle/engine.js';
 import { generateSeed } from '../shuffle/rng.js';
 import { syncPlaylistItems } from '../services/sync.js';
 import { getBlocks } from '../services/blocks.js';
-import { applyShuffleOrder, assertReorderable, openUrlFor } from '../services/reorder.js';
+import { writeShadowPlaylist, openUrlFor } from '../services/shadow.js';
 import { requirePlaylist, getTrackMap } from './playlists.js';
 import { requireUser } from '../auth/session.js';
 import { ApiError } from '../errors.js';
@@ -29,15 +29,24 @@ export function latestRun(db: DB, userId: string, playlistId: string): ShuffleRu
     .get(userId, playlistId) as ShuffleRunRow | undefined;
 }
 
+function shadowIdFor(db: DB, userId: string, playlistId: string): string | null {
+  const row = db
+    .prepare('SELECT shadow_playlist_id FROM shadow_playlists WHERE user_id = ? AND playlist_id = ?')
+    .get(userId, playlistId) as { shadow_playlist_id: string } | undefined;
+  return row?.shadow_playlist_id ?? null;
+}
+
 function runDto(db: DB, run: ShuffleRunRow, machineId: string | null) {
   const units = JSON.parse(run.order_json) as ShuffleUnit[];
   const trackMap = getTrackMap(db, units.flatMap((u) => u.trackIds));
+  const shadowId = shadowIdFor(db, run.user_id, run.playlist_id);
   return {
     runId: run.id,
     playlistId: run.playlist_id,
     seed: run.seed,
     createdAt: run.created_at,
-    openUrl: machineId ? openUrlFor(machineId, run.playlist_id) : null,
+    shadowPlaylistId: shadowId,
+    openUrl: shadowId && machineId ? openUrlFor(machineId, shadowId) : null,
     blockCount: units.filter((u) => u.blockId !== null).length,
     trackCount: units.reduce((n, u) => n + u.trackIds.length, 0),
     units: units.map((u) => ({
@@ -57,7 +66,6 @@ export function registerShuffleRoutes(app: FastifyInstance, ctx: AppContext): vo
 
     await syncPlaylistItems(ctx.db, plex, id);
     const playlist = requirePlaylist(ctx.db, userId, id);
-    assertReorderable(playlist);
     const playlistOrder = (
       ctx.db
         .prepare('SELECT track_id FROM playlist_items WHERE user_id = ? AND playlist_id = ? ORDER BY position')
@@ -90,21 +98,16 @@ export function registerShuffleRoutes(app: FastifyInstance, ctx: AppContext): vo
       )
       .run(run.id, run.user_id, run.playlist_id, run.seed, run.order_json, run.created_at);
 
-    // Kein Shadow: die Original-Playlist wird direkt in die gewürfelte
-    // Reihenfolge gebracht.
-    const reorder = await applyShuffleOrder(ctx.db, plex, { playlistId: id, order: result.order });
-    // Das Umsortieren ändert updatedAt auf dem Server — Stand übernehmen,
-    // damit der nächste Sync nicht unnötig volläuft, aber die neue
-    // Reihenfolge lokal ankommt.
-    await syncPlaylistItems(ctx.db, plex, id, { force: true });
+    await writeShadowPlaylist(ctx.db, plex, {
+      playlistId: id,
+      playlistName: playlist.name,
+      trackIds: result.order,
+      blockCount: result.units.filter((u) => u.blockId !== null).length,
+      seed,
+    });
 
     reply.status(201);
-    return {
-      ...runDto(ctx.db, run, user.server_machine_id),
-      skippedOrphans: result.skippedOrphans,
-      moves: reorder.moves,
-      skippedDuplicates: reorder.skippedDuplicates,
-    };
+    return { ...runDto(ctx.db, run, user.server_machine_id), skippedOrphans: result.skippedOrphans };
   });
 
   /** Letzter Lauf einer Playlist (z. B. um die Vorschau wieder zu öffnen). */

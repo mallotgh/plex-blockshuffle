@@ -59,13 +59,12 @@ export default function SuccessCard({ run, onClose }: Props) {
             In Plex öffnen
           </a>
         ) : (
-          <p className="text-sm text-amber-300">Playlist-Link nicht verfügbar — bitte erneut würfeln.</p>
+          <p className="text-sm text-amber-300">Shadow-Playlist nicht gefunden — bitte erneut würfeln.</p>
         )}
 
         <p className="mt-4 rounded-md bg-neutral-800/70 px-3 py-2 text-xs text-neutral-400">
-          Die Playlist wurde direkt in die gewürfelte Reihenfolge umsortiert. Wichtig: Beim
-          Abspielen muss der <strong>Shuffle in Plex ausgeschaltet</strong> sein, sonst wird die
-          Reihenfolge wieder durcheinandergewürfelt.
+          Wichtig: Beim Abspielen muss der <strong>Shuffle in Plex ausgeschaltet</strong> sein,
+          sonst wird die berechnete Reihenfolge wieder durcheinandergewürfelt.
         </p>
       </div>
     </div>
